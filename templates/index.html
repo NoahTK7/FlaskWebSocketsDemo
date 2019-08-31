@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
+</head>
+<body>
+    <script src="/js/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <script type="text/javascript" charset="utf-8">
+        let socket = io();
+        socket.on('connect', function() {
+            socket.emit('message', {data: 'I\'m connected!'}, function (args) {
+                console.log("callback args: "+args)
+            });
+        });
+        socket.on('time', function (data) {
+            let now = (new Date).getTime();
+            console.log("time received: " + data.time);
+            console.log("delta: "+ (now - data.time) + " (ms)");
+            socket.emit('time_response', {time_original: data.time, time_current: now})
+        });
+        let start = function () {
+            socket.emit('start');
+        }
+    </script>
+
+    <h1>Flask Socket IO client</h1>
+    <button onclick="start()">Start</button>
+</body>
+</html>
