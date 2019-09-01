@@ -5,26 +5,58 @@
     <title>Index</title>
 </head>
 <body>
+    <script src="/js/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
     <script src="/js/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
     <script type="text/javascript" charset="utf-8">
-        let socket = io();
-        socket.on('connect', function() {
-            socket.emit('message', {data: 'I\'m connected!'}, function (args) {
-                console.log("callback args: "+args)
+        $(document).ready(function() {
+
+            const namespace = "/web";
+
+            let socket = io(namespace);
+
+            socket.on('connect', function() {
+                socket.emit('web_connected', function (args) {
+                    console.log("connection to server established")
+                });
             });
+
+            socket.on('server_message', function(data) {
+                console.log("server message: [" + data.id + "] " + data.message)
+            });
+
+            let ping_pong_times = [];
+            let start_time;
+            window.setInterval(function() {
+                start_time = (new Date).getTime();
+                socket.emit('my_ping');
+            }, 1000);
+
+            socket.on('my_pong', function() {
+                const latency = (new Date).getTime() - start_time;
+                ping_pong_times.push(latency);
+                ping_pong_times = ping_pong_times.slice(-30); // keep last 30 samples
+                let sum = 0;
+                for (let i = 0; i < ping_pong_times.length; i++)
+                    sum += ping_pong_times[i];
+                $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
+            });
+
+            /*socket.on('time', function (data) {
+                let now = (new Date).getTime();
+                console.log("time received: " + data.time);
+                console.log("delta: "+ (now - data.time) + " (ms)");
+                socket.emit('time_response', {id: CLIENT_ID, time_original: data.time, time_current: now})
+            });*/
+
+            let start = function () {
+                //socket.emit('start');
+            }
         });
-        socket.on('time', function (data) {
-            let now = (new Date).getTime();
-            console.log("time received: " + data.time);
-            console.log("delta: "+ (now - data.time) + " (ms)");
-            socket.emit('time_response', {time_original: data.time, time_current: now})
-        });
-        let start = function () {
-            socket.emit('start');
-        }
     </script>
 
-    <h1>Flask Socket IO client</h1>
-    <button onclick="start()">Start</button>
+    <h1>Flask Socket IO Dashboard</h1>
+
+    <p>Async mode is: <b>{{ async_mode }}</b></p>
+    <p>Average ping/pong latency: <b><span id="ping-pong"></span> ms</b></p>
 </body>
 </html>
