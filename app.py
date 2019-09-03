@@ -4,6 +4,7 @@ from flask import Flask, render_template, send_from_directory, request
 from flask_socketio import SocketIO, emit
 
 from NodeHandler import NodeHandler
+from WebHandler import WebHandler
 
 PORT = "5000"
 # HOST = "10.140.164.149"
@@ -25,6 +26,7 @@ connected_node_clients = {}
 connected_web_clients = {}
 
 node_handler = None
+web_handler = None
 
 
 # based on https://github.com/miguelgrinberg/Flask-SocketIO/blob/master/example/app.py
@@ -67,26 +69,50 @@ def ping_pong():
     emit('my_pong')
 
 
-# Server sends data to web client #
+# Web client handling #
+
 @socketio.on('connect', namespace='/web')
 def web_connect():
+    global web_handler
+    if web_handler is None:
+        web_handler = WebHandler(socketio)
+
+    '''
     global web_thread
     with web_thread_lock:
         if web_thread is None:
             web_thread = socketio.start_background_task(web_background_thread)
+    '''
 
 
 @socketio.on('web_connected', namespace='/web')
-def on_web_connected():
-    print("[Web] client " + request.sid + " connected")
+def on_web_connected(data):
+    connected_web_clients[request.sid] = data['id']
+    print("[Web] client " + connected_web_clients[request.sid] + " (" + request.sid + ") connected")
+
+    if not web_handler.is_running():
+        if web_handler.is_active():
+            web_handler.restart()
+        else:
+            socketio.start_background_task(target=web_handler.loop)
+    else:
+        pass
 
 
 @socketio.on('disconnect', namespace='/web')
 def web_disconnect():
-    print('Client disconnected', request.sid)
+    if request.sid in connected_web_clients:
+        print("[Web] client " + connected_web_clients[request.sid] + " (" + request.sid + ") disconnected")
+        del connected_web_clients[request.sid]
+    else:
+        print("[Web] " + request.sid + "disconnected but not tracked")
 
-###################################
-# Server sends data to node client #
+    if len(connected_web_clients) == 0:
+        web_handler.stop()
+
+
+# Node client handling #
+
 @socketio.on('connect', namespace='/node')
 def node_connect():
     global node_handler
@@ -110,7 +136,7 @@ def on_node_connected(data):
         if node_handler.is_active():
             node_handler.restart()
         else:
-            socketio.start_background_task(target=node_handler.node_background_thread)
+            socketio.start_background_task(target=node_handler.loop)
     else:
         pass
 
@@ -121,7 +147,7 @@ def on_node_disconnect():
         print("[Node] client " + connected_node_clients[request.sid] + " (" + request.sid + ") disconnected")
         del connected_node_clients[request.sid]
     else:
-        print(request.sid + "disconnected but not tracked")
+        print("[Node] " + request.sid + "disconnected but not tracked")
 
     if len(connected_node_clients) == 0:
         node_handler.stop()

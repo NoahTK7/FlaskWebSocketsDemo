@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Index</title>
+    <title>Flask Socket IO Dashboard</title>
 </head>
 <body>
     <script src="/js/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
@@ -11,13 +11,15 @@
         $(document).ready(function() {
 
             const namespace = "/web";
+            const CLIENT_ID = "web-1";
 
             let socket = io(namespace);
 
             socket.on('connect', function() {
-                socket.emit('web_connected', function (args) {
-                    console.log("connection to server established")
+                socket.emit('web_connected', {id: CLIENT_ID}, function (args) {
+
                 });
+                console.log("connection to server established")
             });
 
             socket.on('server_message', function(data) {
@@ -40,17 +42,6 @@
                     sum += ping_pong_times[i];
                 $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
             });
-
-            /*socket.on('time', function (data) {
-                let now = (new Date).getTime();
-                console.log("time received: " + data.time);
-                console.log("delta: "+ (now - data.time) + " (ms)");
-                socket.emit('time_response', {id: CLIENT_ID, time_original: data.time, time_current: now})
-            });*/
-
-            let start = function () {
-                //socket.emit('start');
-            }
         });
     </script>
 

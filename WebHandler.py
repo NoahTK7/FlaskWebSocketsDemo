@@ -2,7 +2,7 @@ from Handler import Handler
 
 
 # from https://stackoverflow.com/questions/44371041/python-socketio-and-flask-how-to-stop-a-loop-in-a-background-thread
-class NodeHandler(Handler):
+class WebHandler(Handler):
 
     def __init__(self, socketio):
         super().__init__(socketio)
@@ -17,6 +17,6 @@ class NodeHandler(Handler):
                 self.count += 1
                 self.socketio.emit('server_message',
                               {'message': 'Server generated event', 'id': self.count},
-                              namespace='/node')
-                print("[Server] sent server event to /node. id: " + str(self.count))
+                              namespace='/web')
+                print("[Server] sent server event to /web. id: " + str(self.count))
             self.socketio.sleep(5)
