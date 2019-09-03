@@ -90,7 +90,8 @@ def web_disconnect():
 @socketio.on('connect', namespace='/node')
 def node_connect():
     global node_handler
-    node_handler = NodeHandler(socketio)
+    if node_handler is None:
+        node_handler = NodeHandler(socketio)
 
     '''
     global node_thread
@@ -106,7 +107,12 @@ def on_node_connected(data):
     print("[Node] client " + connected_node_clients[request.sid] + " (" + request.sid + ") connected")
 
     if not node_handler.is_running():
-        socketio.start_background_task(target=node_handler.node_background_thread)
+        if node_handler.is_active():
+            node_handler.restart()
+        else:
+            socketio.start_background_task(target=node_handler.node_background_thread)
+    else:
+        pass
 
 
 @socketio.on('disconnect', namespace='/node')
