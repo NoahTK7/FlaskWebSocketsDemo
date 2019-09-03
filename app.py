@@ -1,5 +1,3 @@
-from threading import Lock
-
 from flask import Flask, render_template, send_from_directory, request
 from flask_socketio import SocketIO, emit
 
@@ -16,11 +14,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
 
-web_thread = None
-web_thread_lock = Lock()
+# web_thread = None
+# web_thread_lock = Lock()
 
-node_thread = None
-node_thread_lock = Lock()
+# node_thread = None
+# node_thread_lock = Lock()
 
 connected_node_clients = {}
 connected_web_clients = {}
@@ -28,7 +26,7 @@ connected_web_clients = {}
 node_handler = None
 web_handler = None
 
-
+'''
 # based on https://github.com/miguelgrinberg/Flask-SocketIO/blob/master/example/app.py
 def web_background_thread():
     """Example of how to send server generated events to clients."""
@@ -41,7 +39,7 @@ def web_background_thread():
                       namespace='/web')
         print("[Server] sent server event to /web. id: " + str(count))
 
-
+# based on https://github.com/miguelgrinberg/Flask-SocketIO/blob/master/example/app.py
 def node_background_thread():
     """Example of how to send server generated events to clients."""
     count = 0
@@ -52,6 +50,7 @@ def node_background_thread():
                       {'message': 'Server generated event', 'id': count},
                       namespace='/node')
         print("[Server] sent server event to /node. id: " + str(count))
+'''
 
 
 @app.route('/')
@@ -162,5 +161,4 @@ if __name__ == '__main__':
 
     socketio.run(app, host=HOST, port=PORT, debug=False)
 
-# TODO implement client id tracking, thread control for web client
-#  investigate flask.request, flask.session for useful attributes
+# TODO investigate flask.request, flask.session for useful attributes
