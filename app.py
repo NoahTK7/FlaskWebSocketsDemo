@@ -3,6 +3,8 @@ from threading import Lock
 from flask import Flask, render_template, send_from_directory, request
 from flask_socketio import SocketIO, emit
 
+from NodeHandler import NodeHandler
+
 PORT = "5000"
 # HOST = "10.140.164.149"
 HOST = "127.0.0.1"
@@ -18,6 +20,11 @@ web_thread_lock = Lock()
 
 node_thread = None
 node_thread_lock = Lock()
+
+connected_node_clients = {}
+connected_web_clients = {}
+
+node_handler = None
 
 
 # based on https://github.com/miguelgrinberg/Flask-SocketIO/blob/master/example/app.py
@@ -82,20 +89,36 @@ def web_disconnect():
 # Server sends data to node client #
 @socketio.on('connect', namespace='/node')
 def node_connect():
+    global node_handler
+    node_handler = NodeHandler(socketio)
+
+    '''
     global node_thread
     with node_thread_lock:
         if node_thread is None:
             node_thread = socketio.start_background_task(node_background_thread)
+    '''
 
 
 @socketio.on('node_connected', namespace='/node')
-def on_node_connected():
-    print("[Node] client " + request.sid + " connected")
+def on_node_connected(data):
+    connected_node_clients[request.sid] = data['id']
+    print("[Node] client " + connected_node_clients[request.sid] + " (" + request.sid + ") connected")
+
+    if not node_handler.is_running():
+        socketio.start_background_task(target=node_handler.node_background_thread)
 
 
 @socketio.on('disconnect', namespace='/node')
 def on_node_disconnect():
-    print("[Node] client " + request.sid + " disconnected")
+    if request.sid in connected_node_clients:
+        print("[Node] client " + connected_node_clients[request.sid] + " (" + request.sid + ") disconnected")
+        del connected_node_clients[request.sid]
+    else:
+        print(request.sid + "disconnected but not tracked")
+
+    if len(connected_node_clients) == 0:
+        node_handler.stop()
 
 
 # main entry point
@@ -107,5 +130,5 @@ if __name__ == '__main__':
 
     socketio.run(app, host=HOST, port=PORT, debug=False)
 
-# TODO end thread on disconnect
-#        safe disconnect for node client
+# TODO implement client id tracking, thread control for web client
+#  investigate flask.request, flask.session for useful attributes
