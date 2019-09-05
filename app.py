@@ -23,6 +23,9 @@ socketio = SocketIO(app, async_mode=async_mode)
 connected_node_clients = {}
 connected_web_clients = {}
 
+web_count = 0
+node_count = 0
+
 node_handler = None
 web_handler = None
 
@@ -64,7 +67,12 @@ def send_js(path):
 
 
 @socketio.on('my_ping', namespace='/web')
-def ping_pong():
+def web_ping_pong():
+    emit('my_pong')
+
+
+@socketio.on('my_ping', namespace='/node')
+def node_ping_pong():
     emit('my_pong')
 
 
@@ -85,8 +93,14 @@ def web_connect():
 
 
 @socketio.on('web_connected', namespace='/web')
-def on_web_connected(data):
-    connected_web_clients[request.sid] = data['id']
+def on_web_connected():
+    # generate client id
+    global web_count
+
+    new_id = "web-" + str(web_count)
+    web_count += 1
+
+    connected_web_clients[request.sid] = new_id
     print("[Web] client " + connected_web_clients[request.sid] + " (" + request.sid + ") connected")
 
     if not web_handler.is_running():
@@ -96,6 +110,8 @@ def on_web_connected(data):
             socketio.start_background_task(target=web_handler.loop)
     else:
         pass
+
+    return new_id
 
 
 @socketio.on('disconnect', namespace='/web')
@@ -108,6 +124,12 @@ def web_disconnect():
 
     if len(connected_web_clients) == 0:
         web_handler.stop()
+
+
+@socketio.on_error(namespace='/web')
+def web_error_handler(e):
+    print('[Web] An error has occurred: ' + str(e))
+    # TODO reconnect?
 
 
 # Node client handling #
@@ -127,8 +149,14 @@ def node_connect():
 
 
 @socketio.on('node_connected', namespace='/node')
-def on_node_connected(data):
-    connected_node_clients[request.sid] = data['id']
+def on_node_connected():
+    # generate client id
+    global node_count
+
+    new_id = "node-" + str(node_count)
+    node_count += 1
+
+    connected_node_clients[request.sid] = new_id
     print("[Node] client " + connected_node_clients[request.sid] + " (" + request.sid + ") connected")
 
     if not node_handler.is_running():
@@ -138,6 +166,8 @@ def on_node_connected(data):
             socketio.start_background_task(target=node_handler.loop)
     else:
         pass
+
+    return new_id
 
 
 @socketio.on('disconnect', namespace='/node')
@@ -152,6 +182,12 @@ def on_node_disconnect():
         node_handler.stop()
 
 
+@socketio.on_error(namespace='/node')
+def node_error_handler(e):
+    print('[Node] An error has occurred: ' + str(e))
+    # TODO reconnect?
+
+
 # main entry point
 if __name__ == '__main__':
     print("Starting web server...")
@@ -161,4 +197,4 @@ if __name__ == '__main__':
 
     socketio.run(app, host=HOST, port=PORT, debug=False)
 
-# TODO investigate flask.request, flask.session for useful attributes
+# TODO  - investigate flask.request, flask.session for useful attributes

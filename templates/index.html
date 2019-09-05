@@ -11,13 +11,14 @@
         $(document).ready(function() {
 
             const namespace = "/web";
-            const CLIENT_ID = "web-1";
+            let CLIENT_ID;
 
             let socket = io(namespace);
 
             socket.on('connect', function() {
-                socket.emit('web_connected', {id: CLIENT_ID}, function (args) {
-
+                socket.emit('web_connected', function (args) {
+                    CLIENT_ID = args;
+                    console.log("my client ID is: " + CLIENT_ID);
                 });
                 console.log("connection to server established")
             });
