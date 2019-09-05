@@ -61,6 +61,11 @@ def index():
     return render_template("index.html", async_mode=socketio.async_mode)
 
 
+@app.route('/ping')
+def ping():
+    return "pong"
+
+
 @app.route('/js/<path:path>')
 def send_js(path):
     return send_from_directory('static/js', path)
@@ -198,3 +203,4 @@ if __name__ == '__main__':
     socketio.run(app, host=HOST, port=PORT, debug=False)
 
 # TODO  - investigate flask.request, flask.session for useful attributes
+#       - add significant data payloads to ping-pong latency tests

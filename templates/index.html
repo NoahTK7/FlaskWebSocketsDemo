@@ -27,28 +27,46 @@
                 console.log("server message: [" + data.id + "] " + data.message)
             });
 
-            let ping_pong_times = [];
-            let start_time;
+            let ws_ping_pong_times = [];
+            let ws_start_time;
             window.setInterval(function() {
-                start_time = (new Date).getTime();
+                ws_start_time = (new Date).getTime();
                 socket.emit('my_ping');
             }, 1000);
 
             socket.on('my_pong', function() {
-                const latency = (new Date).getTime() - start_time;
-                ping_pong_times.push(latency);
-                ping_pong_times = ping_pong_times.slice(-30); // keep last 30 samples
+                const latency = (new Date).getTime() - ws_start_time;
+                ws_ping_pong_times.push(latency);
+                ws_ping_pong_times = ws_ping_pong_times.slice(-30); // keep last 30 samples
                 let sum = 0;
-                for (let i = 0; i < ping_pong_times.length; i++)
-                    sum += ping_pong_times[i];
-                $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
+                for (let i = 0; i < ws_ping_pong_times.length; i++)
+                    sum += ws_ping_pong_times[i];
+                $('#ping-pong-ws').text(Math.round(10 * sum / ws_ping_pong_times.length) / 10);
             });
+
+            let http_ping_pong_times = [];
+            let http_start_time;
+            window.setTimeout(function () {
+                window.setInterval(function() {
+                    http_start_time = (new Date).getTime();
+                    $.get( "/ping", function() {
+                        const latency = (new Date).getTime() - http_start_time;
+                        http_ping_pong_times.push(latency);
+                        http_ping_pong_times = http_ping_pong_times.slice(-30); // keep last 30 samples
+                        let sum = 0;
+                        for (let i = 0; i < http_ping_pong_times.length; i++)
+                            sum += http_ping_pong_times[i];
+                        $('#ping-pong-http').text(Math.round(10 * sum / http_ping_pong_times.length) / 10);
+                    });
+                }, 1000);
+            }, 500);
         });
     </script>
 
     <h1>Flask Socket IO Dashboard</h1>
 
     <p>Async mode is: <b>{{ async_mode }}</b></p>
-    <p>Average ping/pong latency: <b><span id="ping-pong"></span> ms</b></p>
+    <p>Average ping/pong latency (WS): <b><span id="ping-pong-ws"></span> ms</b></p>
+    <p>Average ping/pong latency (HTTP): <b><span id="ping-pong-http"></span> ms</b></p>
 </body>
 </html>
