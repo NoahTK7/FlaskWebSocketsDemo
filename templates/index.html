@@ -34,7 +34,7 @@
                 socket.emit('my_ping');
             }, 1000);
 
-            socket.on('my_pong', function() {
+            socket.on('my_pong', function(data) {
                 const latency = (new Date).getTime() - ws_start_time;
                 ws_ping_pong_times.push(latency);
                 ws_ping_pong_times = ws_ping_pong_times.slice(-30); // keep last 30 samples
@@ -49,7 +49,7 @@
             window.setTimeout(function () {
                 window.setInterval(function() {
                     http_start_time = (new Date).getTime();
-                    $.get( "/ping", function() {
+                    $.get( "/ping", function(data) {
                         const latency = (new Date).getTime() - http_start_time;
                         http_ping_pong_times.push(latency);
                         http_ping_pong_times = http_ping_pong_times.slice(-30); // keep last 30 samples

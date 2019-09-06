@@ -1,11 +1,13 @@
-from flask import Flask, render_template, send_from_directory, request
+import json
+
+from flask import Flask, render_template, send_from_directory, request, send_file
 from flask_socketio import SocketIO, emit
 
 from NodeHandler import NodeHandler
 from WebHandler import WebHandler
 
 PORT = "5000"
-# HOST = "10.140.164.149"
+# HOST = "10.136.12.206"
 HOST = "127.0.0.1"
 
 async_mode = None
@@ -63,7 +65,10 @@ def index():
 
 @app.route('/ping')
 def ping():
-    return "pong"
+    with open('static/data/collisions.json') as file:
+        return json.load(file)
+    # faster than loading file into python (I think)
+    # return send_file('static/data/collisions.json')
 
 
 @app.route('/js/<path:path>')
@@ -73,7 +78,8 @@ def send_js(path):
 
 @socketio.on('my_ping', namespace='/web')
 def web_ping_pong():
-    emit('my_pong')
+    with open('static/data/collisions.json') as file:
+        emit('my_pong', json.load(file))
 
 
 @socketio.on('my_ping', namespace='/node')
@@ -116,6 +122,7 @@ def on_web_connected():
     else:
         pass
 
+    # reply to client with its ID
     return new_id
 
 
@@ -136,8 +143,10 @@ def web_error_handler(e):
     print('[Web] An error has occurred: ' + str(e))
     # TODO reconnect?
 
-
+########################
 # Node client handling #
+########################
+
 
 @socketio.on('connect', namespace='/node')
 def node_connect():
@@ -172,6 +181,7 @@ def on_node_connected():
     else:
         pass
 
+    # reply to client with its ID
     return new_id
 
 
@@ -203,4 +213,3 @@ if __name__ == '__main__':
     socketio.run(app, host=HOST, port=PORT, debug=False)
 
 # TODO  - investigate flask.request, flask.session for useful attributes
-#       - add significant data payloads to ping-pong latency tests
